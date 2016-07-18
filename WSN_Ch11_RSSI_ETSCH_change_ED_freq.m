@@ -47,7 +47,7 @@ ylabel('Probability');
 
 %Calculate the pdf for continuous case:
 figure;
-xx_WSN_Ch11_RSSI = 0:0.02:x2(length(x2));
+xx_WSN_Ch11_RSSI = 0:1:x2(length(x2));
 pdf_WSN_Ch11_RSSI = spline(x2,max_ngb_t_WV2,xx_WSN_Ch11_RSSI);
 plot(xx_WSN_Ch11_RSSI,pdf_WSN_Ch11_RSSI);
 xlabel ('t [ms]');

@@ -10,7 +10,7 @@ for l = 0 : 250
 for m = 0 : 7
   %postChNonHT_WSN_ETSCH = [postChNonHT_WSN_ETSCH;WSN_Ch11_100ms((101+500*m):(107+l+500*m),:);];
   postChNonHT_WSN_ETSCH = WSN_Ch11_100ms((101+500*m):(107+l+500*m),:);
-
+%end
   [TFR2E_2,T2E,F2E] = tfrwv(postChNonHT_WSN_ETSCH((1:(7+l))),1:length(postChNonHT_WSN_ETSCH((1:(7+l)))),length(postChNonHT_WSN_ETSCH((1:(7+l)))),1);
   %[TFR2E_2,T2E,F2E] = tfrwv(postChNonHT_WSN_ETSCH,1:length(postChNonHT_WSN_ETSCH),length(postChNonHT_WSN_ETSCH),1);
 
@@ -54,7 +54,7 @@ max_ngb_t_WV2E = [max_ngb_t_WV2E,max_ngb_t_WV2E_p];
 %max_ngb_t_WV2E = max_ngb_t_WV2E/(r2E);
 end
 x2E = linspace(0,time(length(time)),length(max_ngb_t_WV2E));
-xxE = 0:0.02:x2E(length(x2E));
+xxE = 0:1:x2E(length(x2E));
 pdfE = spline(x2E,max_ngb_t_WV2E,xxE);
 %dnm=[dnm,max_ngb_t_WV2E];
 %dnm2=[dnm2,pdfE];
@@ -80,4 +80,4 @@ x = 0.16:0.02:(0.02*length(perc_err_ED_width)+0.158);
 figure;
 plot(x,perc_err_ED_width);
 xlabel ('ED width [ms]');
-ylabel('% error against E-TSCH');
+ylabel('% RMSE against E-TSCH');
