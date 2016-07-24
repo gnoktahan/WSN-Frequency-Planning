@@ -1,16 +1,16 @@
 postChNonHT_WSN_ETSCH = [];
 err_Tx_E_TSCH = [];
-for l = 0 : 7  %number of EDs in each slot
+for l = 0 : 20  %number of EDs in each slot
   max_ngb_t_WV2E = [];
 for m = 0 : 7  %TS number
   postChNonHT_WSN_ETSCH = [];
   for z = 0 : l
-    postChNonHT_WSN_ETSCH = [postChNonHT_WSN_ETSCH;postChNonHT_WSN((100001+6000*z+200000*m):(102560+6000*z+200000*m),:);];
+    postChNonHT_WSN_ETSCH = [postChNonHT_WSN_ETSCH;postChNonHT_WSN((1001+60*z+2000*m):(1026+60*z+2000*m),:);];
   end
 %[TFR2E,T2E,F2E] = tfrwv(postChNonHT_WSN_ETSCH,1:length(postChNonHT_WSN_ETSCH),length(postChNonHT_WSN_ETSCH),1);
 %TFR2E = [];
 %for i = 0 : 7
-  [TFR2E_2,T2E,F2E] = tfrwv(postChNonHT_WSN_ETSCH((1):((2560*(l+1)))),1:length(postChNonHT_WSN_ETSCH((1):((2560*(l+1))))),length(postChNonHT_WSN_ETSCH((1):((2560*(l+1))))),1);
+  [TFR2E_2,T2E,F2E] = tfrwv(postChNonHT_WSN_ETSCH((1):((26*(l+1)))),1:length(postChNonHT_WSN_ETSCH((1):((26*(l+1))))),length(postChNonHT_WSN_ETSCH((1):((26*(l+1))))),1);
   %TFR2E = [TFR2E,TFR2E_2];
   %clear TFR2E_2
 %end
@@ -36,7 +36,7 @@ for tm = 1 : (c2E)
     k = 1;
     for fr = i : j % 1722 : 3380
     %for fr = 1 : r2E % 1722 : 3380
-        if abs(TFR2E_2(fr,tm)) <= 1e-9 %0.374e-9
+        if abs(TFR2E_2(fr,tm)) <= 1e-6 %0.374e-9
             count = count + 1;
             %t_total = t_total + 1;
         else
@@ -57,22 +57,22 @@ max_ngb_t_WV2E = [max_ngb_t_WV2E,max_ngb_t_WV2E_p];
 %max_ngb_t_WV2E = max_ngb_t_WV2E/(r2E);
 end
 %figure;
-time = ((0:length(postChNonHT_WSN)-1)/fs)*1e6; %length of preChNonHT:1596000 or 19000
+time = ((0:length(postChNonHT_WSN)-1)/fs)*1e5; %length of preChNonHT:1596000 or 19000
 x2E = linspace(0,time(length(time)),length(max_ngb_t_WV2E));
 %plot(x2E,max_ngb_t_WV2E);
 %xlabel ('t [us]');
 %ylabel('Probability');
 %title ('Time Domain');
-xxE = 0:1:x2E(length(x2E));
+xxE = 0:0.01:x2E(length(x2E));
 pdfE = spline(x2E,max_ngb_t_WV2E,xxE);
-err_Tx_E_TSCH = [err_Tx_E_TSCH;sqrt(immse(pdf_WiFi_Tx_Edited,pdfE))];
+err_Tx_E_TSCH = [err_Tx_E_TSCH;sqrt(immse(pdf_WSN,pdfE))];
 end
 
 figure;
 x = 1:1:length(err_Tx_E_TSCH);
 plot(x,err_Tx_E_TSCH);
 xlabel ('number of EDs in each TS');
-ylabel('mean square error');
+ylabel('root mean square error');
 
 %Calculate as percentage:
 perc_err_ED_freq = [];
@@ -80,6 +80,7 @@ for i = 2 : length(err_Tx_E_TSCH)
   perc_err_ED_freq = [perc_err_ED_freq;(((err_Tx_E_TSCH(1) - err_Tx_E_TSCH(i))/err_Tx_E_TSCH(1))*100)];
 end
 x = 2:1:(length(perc_err_ED_freq)+1);
+figure;
 plot(x,perc_err_ED_freq);
 xlabel ('number of EDs in each TS');
-ylabel('mean square error');
+ylabel('% RMSE against E-TSCH');

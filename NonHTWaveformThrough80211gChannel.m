@@ -9,7 +9,7 @@ preChNonHT = [];
 %Create a non-HT configuration object and generate a non-HT waveform.
 
 nht = wlanNonHTConfig;
-nht.PSDULength = 100; %Physical Layer Service Data Unit. Number of bytes carried in the user payload (actual data), specified as an integer from 1 to 4095.
+nht.PSDULength = 125; %Physical Layer Service Data Unit. Number of bytes carried in the user payload (actual data), specified as an integer from 1 to 4095.
 
 %for P = 1:numPackets
 
@@ -23,20 +23,20 @@ nht.PSDULength = 100; %Physical Layer Service Data Unit. Number of bytes carried
 nht2 = wlanNonHTConfig;
 nht2.PSDULength = 14; %ACK
 nht3 = wlanNonHTConfig;
-nht3.PSDULength = 250;
+nht3.PSDULength = 240;
 nht4 = wlanNonHTConfig;
-nht4.PSDULength = 100;
+nht4.PSDULength = 125;
 preChNonHT = [wlanWaveformGenerator(bits,nht,'NumPackets',1,'IdleTime',10e-6);wlanWaveformGenerator(bits,nht2,'NumPackets',1,'IdleTime',(50e-6+32e-6));wlanWaveformGenerator(bits,nht3,'NumPackets',1,'IdleTime',(80e-6));wlanWaveformGenerator(bits,nht4,'NumPackets',1,'IdleTime',(10e-6));wlanWaveformGenerator(bits,nht2,'NumPackets',1,'IdleTime',0);]; %SIFS=10us, DIFS=50us, backoff1=64us (variable 31-1023), backoff2=128us
 for i = 1 : 83
   preChNonHT = [preChNonHT;wlanWaveformGenerator(bits,nht,'NumPackets',1,'IdleTime',10e-6);wlanWaveformGenerator(bits,nht2,'NumPackets',1,'IdleTime',(50e-6+32e-6));wlanWaveformGenerator(bits,nht3,'NumPackets',1,'IdleTime',(80e-6));wlanWaveformGenerator(bits,nht4,'NumPackets',1,'IdleTime',(10e-6));wlanWaveformGenerator(bits,nht2,'NumPackets',1,'IdleTime',0);];
 end
 %----------------
-time = ((0:length(preChNonHT)-1)/fs)*1e6; %length of preChNonHT:1596000 or 19000
+time = ((0:length(preChNonHT)-1)/fs)*1e5; %length of preChNonHT:1596000 or 19000
 %time = ((0:0.02:100-0.02)); %for using RSSI data
 
 figure;
 plot(time,abs(preChNonHT));
-xlabel ('t [us]');
+xlabel ('t [ms]');
 ylabel('Magnitude');
 
 %BANDPASS FILTER
@@ -110,7 +110,7 @@ clear ch802
 clear AWGN
 clear chWSN
 clear chAWGN
-clear combined
+%clear combined
 clear dist
 clear fc
 clear fc_WSN
@@ -128,7 +128,7 @@ clear pathLoss
 clear pathLoss_WSN
 clear postChNonHT2
 clear preChNonHT_WSN
-clear sa
+%clear sa
 clear title
 clear trms
 clear trms_WSN
@@ -437,16 +437,16 @@ for j = i : length(freq2)
       break
     end
 end
-max_ngb_t_WV2 = zeros(1,(c2-149));
+max_ngb_t_WV2 = zeros(1,(c2));
 %t_total = 0;
-for tm = 150 : (c2)
+for tm = 1 : (c2)
     count = 0;
-    adjacent = zeros(1,ceil((j-i)/2));
+    adjacent = zeros(1,ceil((j-i)));
     %adjacent = zeros(1,ceil((r2)/2));
     k = 1;
     for fr = i : j % 1722 : 3380
     %for fr = 1 : r2 % 1722 : 3380
-        if abs(TFR2(fr,tm)) <= 1e-8
+        if abs(TFR2(fr,tm)) <= 1e-6
             count = count + 1;
             %t_total = t_total + 1;
         else
@@ -455,7 +455,7 @@ for tm = 150 : (c2)
             count = 0;
         end
     end
-    max_ngb_t_WV2(1,(tm-149)) = max(adjacent);
+    max_ngb_t_WV2(1,(tm)) = max(adjacent);
     %if count > max(adjacent)
       %max_ngb_t_WV2(1,tm) = count;
     %end
@@ -537,8 +537,8 @@ xx_SPR_WiFi_Tx = 0:1:x2(length(x2));
 pdf_SPR_WiFi_Tx = spline(x2,max_ngb_t_SPR2T,xx_SPR_WiFi_Tx);
 plot(xx_SPR_WiFi_Tx,pdf_SPR_WiFi_Tx);
 
-err_SPR_Tx_WSN = immse(pdf_SPR_WiFi_Tx,pdf_SPR_WSN)
-err_SPR_Tx_Rx = immse(pdf_SPR_WiFi_Tx,pdf_SPR_WiFi_Rx)
+err_SPR_Tx_WSN = sqrt(immse(pdf_SPR_WiFi_Tx,pdf_SPR_WSN))
+err_SPR_Tx_Rx = sqrt(immse(pdf_SPR_WiFi_Tx,pdf_SPR_WiFi_Rx))
 %----------WV ERROR---------------
 figure;
 xx_WSN = 0:1:x2(length(x2));
@@ -555,8 +555,8 @@ plot(xx_WiFi_Tx,pdf_WiFi_Tx);
 xlabel ('t [us]');
 ylabel('Probability');
 
-err_Tx_WSN = immse(pdf_WiFi_Tx,pdf_WSN)
-err_Tx_Rx = immse(pdf_WiFi_Tx,pdf_WiFi_Rx)
+err_Tx_WSN = sqrt(immse(pdf_WiFi_Tx,pdf_WSN))
+err_Tx_Rx = sqrt(immse(pdf_WiFi_Tx,pdf_WiFi_Rx))
 %----------E-TSCH ERROR---------------
 figure;
 xx_E_TSCH = 0:1:x2_E_TSCH(length(x2_E_TSCH));
@@ -570,7 +570,7 @@ xlabel ('t [us]');
 ylabel('Probability');
 legend('WSN (E-TSCH)','WiFi Tx');
 
-err_Tx_E_TSCH = immse(pdf_WiFi_Tx,pdf_E_TSCH)
+err_Tx_E_TSCH = sqrt(immse(pdf_WiFi_Tx,pdf_E_TSCH))
 %------------------------------------
 %----------8 SLOT E-TSCH ERROR---------------
 figure;
@@ -597,7 +597,7 @@ plot(xxE,pdfE);
 %ylabel('Probability');
 %legend('WSN (E-TSCH)','WiFi Tx');
 
-err_Tx_E_TSCH = immse(pdf_WiFi_Tx_Edited,pdfE)
+err_Tx_E_TSCH = sqrt(immse(pdf_WiFi_Tx_Edited,pdfE))
 %Continuous => result = 4.3780e-08
 %E-TSCH => result = 4.9364e-08 => 12.75% worse
 %A-TSCH => result = 8.3191e-08 => 68% worse
