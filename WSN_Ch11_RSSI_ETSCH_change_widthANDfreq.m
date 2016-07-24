@@ -1,7 +1,7 @@
 time = ((0:0.02:100-0.02)); %for using RSSI data
 postChNonHT_WSN_ETSCH = [];
 err_Tx_E_TSCH_widthANDfreq = zeros(5,75);
-for w = 0 : 74 %number of EDs in each slot
+for w = 0 : 74 %ED width
   err_Tx_E_TSCH_width = [];
 for l = 0 : 4 %number of EDs in each slot
   max_ngb_t_WV2E = [];
@@ -90,3 +90,6 @@ set(gca,'Ydir','reverse')
 %plot(x,perc_err_ED_width);
 %xlabel ('ED width [ms]');
 %ylabel('% error against E-TSCH');
+
+%T=single(TFR2);
+%csvwrite('TFR.csv',T);
