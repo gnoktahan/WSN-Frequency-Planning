@@ -74,10 +74,10 @@ ylabel('mean square error');
 %Calculate as percentage:
 perc_err_ED_freq = [];
 for i = 2 : length(err_Tx_E_TSCH)
-  perc_err_ED_freq = [perc_err_ED_freq;(((err_Tx_E_TSCH(1) - err_Tx_E_TSCH(i))/err_Tx_E_TSCH(1))*100)];
+  perc_err_ED_freq = [perc_err_ED_freq;(((err_Tx_E_TSCH(i) - err_Tx_E_TSCH(1))/err_Tx_E_TSCH(1))*100)];
 end
 x = 138:10:(10*length(perc_err_ED_freq)+128);
 figure;
 plot(x,perc_err_ED_freq);
-xlabel ('number of EDs in each TS');
+xlabel ('ED width [us]');
 ylabel('% error against E-TSCH');

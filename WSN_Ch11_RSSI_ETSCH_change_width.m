@@ -65,7 +65,7 @@ pdfE = spline(x2E,max_ngb_t_WV2E,xxE);
 err_Tx_E_TSCH_width = [err_Tx_E_TSCH_width;sqrt(mean((pdf_WSN_Ch11_RSSI-pdfE).^2))]; %RMSE
 end
 
-x = 0.14:0.02:(0.02*length(err_Tx_E_TSCH_width)+0.138);
+x = 0.14:0.02:(0.02*length(err_Tx_E_TSCH_width)+0.12); %past: x = 0.14:0.02:(0.02*length(err_Tx_E_TSCH_width)+0.138);
 figure;
 plot(x,err_Tx_E_TSCH_width);
 xlabel ('ED width [ms]');
@@ -76,7 +76,7 @@ perc_err_ED_width = [];
 for i = 2 : length(err_Tx_E_TSCH_width)
   perc_err_ED_width = [perc_err_ED_width;(((err_Tx_E_TSCH_width(i) - err_Tx_E_TSCH_width(1))/err_Tx_E_TSCH_width(1))*100)];
 end
-x = 0.16:0.02:(0.02*length(perc_err_ED_width)+0.158);
+x = 0.16:0.02:(0.02*length(perc_err_ED_width)+0.14); %past: x = 0.16:0.02:(0.02*length(perc_err_ED_width)+0.158);
 figure;
 plot(x,perc_err_ED_width);
 xlabel ('ED width [ms]');
