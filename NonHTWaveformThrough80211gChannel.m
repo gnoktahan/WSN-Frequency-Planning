@@ -31,6 +31,7 @@ for i = 1 : 83
   preChNonHT = [preChNonHT;wlanWaveformGenerator(bits,nht,'NumPackets',1,'IdleTime',10e-6);wlanWaveformGenerator(bits,nht2,'NumPackets',1,'IdleTime',(50e-6+32e-6));wlanWaveformGenerator(bits,nht3,'NumPackets',1,'IdleTime',(80e-6));wlanWaveformGenerator(bits,nht4,'NumPackets',1,'IdleTime',(10e-6));wlanWaveformGenerator(bits,nht2,'NumPackets',1,'IdleTime',0);];
 end
 %----------------
+preChNonHT = single(preChNonHT);
 time = ((0:length(preChNonHT)-1)/fs)*1e5; %length of preChNonHT:1596000 or 19000
 %time = ((0:0.02:100-0.02)); %for using RSSI data
 
@@ -135,8 +136,10 @@ clear trms_WSN
 
 %--------------------------------------------Spectrogram--------------------------------------------------------
 Lh=2.*round(((length(postChNonHT_WSN)/4)+1)/2)-1;
+Lh2=2.*round(((length(postChNonHT_WSN)/10)+1)/2)-1;
 %h = window(@kaiser,Lh);
 h = tftb_window(Lh,'Hamming');
+g = tftb_window(Lh2,'Hamming');
 [TFR,T,F] = tfrsp(postChNonHT_WSN,1:length(postChNonHT_WSN),length(postChNonHT_WSN),h,1);
 %[TFR3,RTFR3,HAT3] = tfrrpwv(postChNonHT_WSN, 1:length(postChNonHT_WSN), length(postChNonHT_WSN), h, 1);
 %[TFR4,RTFR4,HAT4] = tfrrspwv(postChNonHT_WSN, 1:length(postChNonHT_WSN), length(postChNonHT_WSN),g, h, 1);
