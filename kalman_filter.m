@@ -26,5 +26,8 @@ legend([hz hk ht],'observations','Kalman output','true RSSI')
 title('Channel RSSI Estimation with Kalman Filter')
 hold off
 
-RSSI_col = RSSI.';
-sqrt(immse([s(2:end).x],RSSI_col));
+%RSSI_col = RSSI.'; %convert row to column
+%sqrt(immse([s(2:end).x],RSSI_col))
+
+% difference -> diversion -> take square -> take mean -> take square root -> finally multiply by 100:
+perc_err = 100*errperf(RSSI_col,[s(2:end).x],'rmsre'); %percentage root mean squared relative error
