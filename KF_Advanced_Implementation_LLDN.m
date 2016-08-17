@@ -1,3 +1,10 @@
+% Read data from file:
+directory='/Users/GKN/Downloads/15.4_RSSI/';
+file_name='node1.txt';
+fileID=fopen(strcat(directory,file_name),'r');
+A=fscanf(fileID,'%f %f',[2000000 1]);
+fclose(fileID);
+
 s.x = [1,1,1,1,2,2,2,2,2,1]; %Initialization (first measurement results)
 s.A = 1;
 s.Q = 0.03^2; % variance, hence stdev^2
@@ -10,7 +17,7 @@ s.P = nan;
 
 LLDN_FULL = [];
 
-for k = 1 : 660 % Until 330.000
+for k = 1 : 9195 % Until 330.000
   CISTER_RSSI = [];
   CISTER_RSSI = CISTER_RSSI_250000(((k-1)*500+1):(k*500));
   RSSI_LLDN = [];
