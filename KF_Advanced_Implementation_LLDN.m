@@ -13,6 +13,7 @@ for i = 1 : 500
 end
 
 accuracy = zeros(500,1);
+throughput_util = zeros(500,1);
 
 for scan = 1 : 500
 
@@ -90,7 +91,39 @@ hold off
 %sqrt(immse([s(2:end).x],LLDN_FULL_col))
 
 % difference -> diversion -> take square -> take mean -> take square root -> finally multiply by 100:
-perc_err = 100*errperf(LLDN_FULL,KF_out,'rmsre'); %percentage root mean squared relative error
-accuracy(scan,1) = 100 - perc_err;
+%perc_err = 100*errperf(LLDN_FULL,KF_out,'rmsre'); %percentage root mean squared relative error
+%accuracy(scan,1) = 100 - perc_err;
+
+count = 0;
+for i = 1 : length(KF_out)
+  if KF_out(i) == LLDN_FULL(i)
+    count = count + 1;
+  end
+end
+accuracy(scan,1) = 100*(count/length(KF_out));
+
+count = 0;
+for i = 1 : length(KF_out)
+  if KF_out(i) == LLDN_FULL(i) && KF_out(i) == 2
+    count = count + 1;
+  end
+end
+throughput_util(scan,1) = 100*(count/length(KF_out));
 
 end
+
+% plot accuracy pdf:
+figure
+grid on
+plot(accuracy);
+title('KF Accuracy PDF');
+xlabel ('Dataset');
+ylabel('% Accuracy');
+
+% plot throughput_util pdf:
+figure
+grid on
+plot(throughput_util);
+title('KF Throughput Gain PDF');
+xlabel ('Dataset');
+ylabel('% Estimation Accuracy of Clean Channels');
