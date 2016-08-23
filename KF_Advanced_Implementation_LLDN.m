@@ -12,15 +12,16 @@ for i = 1 : 500
   CISTER_RSSI_5600_500(:,i) = CISTER_RSSI_250000(((i-1)*5600+1):(i*5600));
 end
 
-accuracy = zeros(500,1);
-throughput_util = zeros(500,1);
-
 % Determine optimum ED freq and width using Wigner-Ville:  ---------------------------------------------------------
-optimum_ED_freq_array = [];
-optimum_ED_width_array = [];
+optimum_ED_freq_matrix = [];
+optimum_ED_width_matrix = [];
+
 for opt = 1 : 500
+  optimum_ED_freq_array = [];
+  optimum_ED_width_array = [];
+for superframe = 1 : 11
 CISTER_RSSI = [];
-CISTER_RSSI = CISTER_RSSI_5600_500((1:500),opt); % first 10ms for initialization
+CISTER_RSSI = CISTER_RSSI_5600_500(((500*(superframe-1)+1):500*superframe),opt); % first 10ms for initialization
 
 time = ((0:0.02:10-0.02)); %for using RSSI data
 postChNonHT_WSN_ETSCH = [];
@@ -128,11 +129,18 @@ for i = 1 : length(err_Tx_E_TSCH_widthANDfreq(1,:))
 end
 optimum_ED_freq_array = [optimum_ED_freq_array;optimum_ED_freq];
 optimum_ED_width_array = [optimum_ED_width_array;optimum_ED_width];
+end %superframe
+optimum_ED_freq_matrix = [optimum_ED_freq_matrix,optimum_ED_freq_array];
+optimum_ED_width_matrix = [optimum_ED_width_matrix,optimum_ED_width_array];
 end % opt
-%---------------------------------------------------------------------------------------------
+%--------------------------------End of ED Optimization through WV-----------------------------------------
+
+accuracy = zeros(500,1);
+throughput_util = zeros(500,1);
+max_throughput_util = zeros(500,1);
+throughput_gain_vs_ED_width = [];
 
 for scan = 1 : 500
-
   clear s
 
   CISTER_RSSI = [];
@@ -140,7 +148,8 @@ for scan = 1 : 500
   RSSI_LLDN = [];
   LLDN_SF = ones(1,10);
   for i = 0 : 9 % 10 time slots
-    RSSI_LLDN = CISTER_RSSI(50*i+13 : 50*i+37); % measurement
+    RSSI_LLDN = CISTER_RSSI(50*i+1 : 50*(i+1)); % measurement
+    %RSSI_LLDN = CISTER_RSSI(50*i+13 : 50*i+37); % measurement
     if mean(RSSI_LLDN) < 14
       LLDN_SF(i+1) = 2; % 2 means free 1 means occupied (interfered)
     end
@@ -160,6 +169,7 @@ for scan = 1 : 500
   LLDN_FULL = [];
 
 for k = 1 : 11 % Until 5500
+%tic
   CISTER_RSSI = [];
   CISTER_RSSI = CISTER_RSSI_5600_500((((k-1)*500+1):(k*500)),scan);
   RSSI_LLDN = [];
@@ -167,8 +177,8 @@ for k = 1 : 11 % Until 5500
   LLDN_SF = ones(1,10);
   LLDN_SF_FULL = ones(1,10);
   for i = 0 : 9 % 10 time slots
-    RSSI_LLDN = CISTER_RSSI(50*i+13 : 50*i+37); % if ED optimization is not applied
-    %RSSI_LLDN = CISTER_RSSI(50*i+20 : 50*i+((optimum_ED_width_array(scan)/0.02)-1+13)); % if ED optimization is applied
+    %RSSI_LLDN = CISTER_RSSI(50*i+13 : 50*i+37); % if ED optimization is not applied
+    RSSI_LLDN = CISTER_RSSI(50*i+20 : 50*i+((optimum_ED_width_matrix(k,scan)/0.02)-1+13)); % if ED optimization is applied
     RSSI_LLDN_FULL = CISTER_RSSI(50*i+1 : 50*(i+1));
     if mean(RSSI_LLDN) < 14
       LLDN_SF(i+1) = 2; % 2 means free 1 means occupied (interfered)
@@ -181,8 +191,10 @@ for k = 1 : 11 % Until 5500
   LLDN_FULL = [LLDN_FULL,LLDN_SF_FULL(1:10)];
   %for t = 0 : 499
     s(end).z = LLDN_SF(1:10); % create a measurement
+    %s(end).z = LLDN_SF(1:10); % create a measurement
     s(end+1)=kalmanf(s(end)); % perform a Kalman filter iteration
   %end
+%toc
 end
 
 KF_out = round([s(2:end).x]);
@@ -227,13 +239,31 @@ for i = 1 : length(KF_out)
 end
 throughput_util(scan,1) = 100*(count/length(KF_out));
 
+count = 0;
+for i = 1 : length(LLDN_FULL)
+  if LLDN_FULL(i) == 2
+    count = count + 1;
+  end
+end
+max_throughput_util(scan,1) = 100*(count/length(LLDN_FULL));
+
+for j = 1 : 11
+  count = 0;
+  for i = ((j-1)*1+1) : (10*j)
+    if KF_out(i) == LLDN_FULL(i) && KF_out(i) == 2
+      count = count + 1;
+    end
+  end
+  throughput_gain_vs_ED_width = [throughput_gain_vs_ED_width;((100*(count/length(KF_out)))*(1-optimum_ED_width_matrix(j,scan)))];
+end
+
 end
 
 % plot accuracy pdf:
 figure
 grid on
 plot(accuracy);
-title('KF Accuracy PDF');
+title('KF Accuracy');
 xlabel ('Dataset');
 ylabel('% Accuracy');
 
@@ -241,6 +271,27 @@ ylabel('% Accuracy');
 figure
 grid on
 plot(throughput_util);
-title('KF Throughput Gain PDF');
+title('KF Throughput Gain');
 xlabel ('Dataset');
 ylabel('% Estimation Accuracy of Clean Channels');
+
+% plot throughput_gain_vs_ED_width pdf:
+figure
+grid on
+plot(throughput_gain_vs_ED_width);
+title('KF Throughput Gain against ED Width)');
+xlabel ('Slot Frames');
+ylabel('KF Throughput Gain * (1 - ED Width)');
+
+%{
+% plot throughput_util pdf:
+figure
+hold on
+grid on
+plot(accuracy);
+plot(max_throughput_util);
+title('KF Max Possible Throughput Gain');
+xlabel ('Dataset');
+ylabel('% Clean Channels');
+hold off
+%}
