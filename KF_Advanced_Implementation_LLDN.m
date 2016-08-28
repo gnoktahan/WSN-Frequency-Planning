@@ -135,6 +135,11 @@ optimum_ED_width_matrix = [optimum_ED_width_matrix,optimum_ED_width_array];
 end % opt
 %--------------------------------End of ED Optimization through WV-----------------------------------------
 
+accuracy_array = [];
+
+%for st_transition = 0.95 : 0.001 : 1.05
+for obs_transition = 1.061 : 0.0001 : 1.063
+
 accuracy = zeros(500,1);
 throughput_util = zeros(500,1);
 max_throughput_util = zeros(500,1);
@@ -149,17 +154,27 @@ for scan = 1 : 500
   LLDN_SF = ones(1,10);
   for i = 0 : 9 % 10 time slots
     RSSI_LLDN = CISTER_RSSI(50*i+1 : 50*(i+1)); % measurement
-    %RSSI_LLDN = CISTER_RSSI(50*i+13 : 50*i+37); % measurement
+    %%RSSI_LLDN = CISTER_RSSI(50*i+13 : 50*i+37); % measurement
     if mean(RSSI_LLDN) < 14
       LLDN_SF(i+1) = 2; % 2 means free 1 means occupied (interfered)
+      %%LLDN_SF(i+1) = mean(RSSI_LLDN);
     end
   end
 
+  %%alpha = 0.5;
+  %%ES_estimation = [];
+  %%P_new = [];
+  %%P_measured = [];
+  %%P_previous = [];
+  %%P_measured = LLDN_SF;
+  %%P_previous = LLDN_SF;
+
   %s.x = [1,1,1,1,2,2,2,2,2,1]; %Initialization (first measurement results)
   s.x = LLDN_SF; %Initialization (first measurement results)
-  s.A = 1;
+  s.A = st_transition;
   s.Q = 0.03^2; % variance, hence stdev^2
-  s.H = 1;
+  %%s.H = obs_transition;
+  s.H = 1.0615;
   s.R = 0.06^2; % variance, hence stdev^2
   s.B = 0;
   s.u = 0;
@@ -177,28 +192,60 @@ for k = 1 : 11 % Until 5500
   LLDN_SF = ones(1,10);
   LLDN_SF_FULL = ones(1,10);
   for i = 0 : 9 % 10 time slots
-    %RSSI_LLDN = CISTER_RSSI(50*i+13 : 50*i+37); % if ED optimization is not applied
-    RSSI_LLDN = CISTER_RSSI(50*i+20 : 50*i+((optimum_ED_width_matrix(k,scan)/0.02)-1+13)); % if ED optimization is applied
+    RSSI_LLDN = CISTER_RSSI(50*i+13 : 50*i+37); % if ED optimization is not applied
+    %%RSSI_LLDN = CISTER_RSSI(50*i+20 : 50*i+((optimum_ED_width_matrix(k,scan)/0.02)-1+13)); % if ED optimization is applied
     RSSI_LLDN_FULL = CISTER_RSSI(50*i+1 : 50*(i+1));
     if mean(RSSI_LLDN) < 14
       LLDN_SF(i+1) = 2; % 2 means free 1 means occupied (interfered)
+      %%LLDN_SF(i+1) = mean(RSSI_LLDN);
     end
     if mean(RSSI_LLDN_FULL) < 14
       LLDN_SF_FULL(i+1) = 2; % 2 means free 1 means occupied (interfered)
+      %%LLDN_SF_FULL(i+1) = mean(RSSI_LLDN_FULL);
     end
   end
 
   LLDN_FULL = [LLDN_FULL,LLDN_SF_FULL(1:10)];
+
+  %Exponential Smoothing algorithm:
+  %P_measured = s(end).x;
+  %P_measured = LLDN_SF_FULL;
+  %P_new = alpha*P_measured + (1-alpha)*P_previous;
+  %P_previous = round(P_new);
+  %P_previous = P_new;
+  %%ES_estimation = [ES_estimation,round(P_new)];
+  %ES_estimation = [ES_estimation,P_new];
+
   %for t = 0 : 499
-    s(end).z = LLDN_SF(1:10); % create a measurement
-    %s(end).z = LLDN_SF(1:10); % create a measurement
+    %%s(end).z = P_new;
+    s(end).z = LLDN_SF_FULL(1:10); % create a measurement
+    %%s(end).z = LLDN_SF(1:10); % create a measurement
     s(end+1)=kalmanf(s(end)); % perform a Kalman filter iteration
   %end
 %toc
+
 end
 
 KF_out = round([s(2:end).x]);
+%%KF_out = [s(2:end).x];
+%%KF_out = ES_estimation;
 
+%{
+for i = 1 : length(KF_out)
+  if KF_out(i) < 14
+    KF_out(i) = 2; % 2 means free 1 means occupied (interfered)
+  else
+    KF_out(i) = 1;
+  end
+end
+for i = 1 : length(LLDN_FULL)
+  if LLDN_FULL(i) < 14
+    LLDN_FULL(i) = 2; % 2 means free 1 means occupied (interfered)
+  else
+    LLDN_FULL(i) = 1;
+  end
+end
+%}
 
 % plot it:
 %{
@@ -257,7 +304,11 @@ for j = 1 : 11
   throughput_gain_vs_ED_width = [throughput_gain_vs_ED_width;((100*(count/length(KF_out)))*(1-optimum_ED_width_matrix(j,scan)))];
 end
 
-end
+end %scan
+
+accuracy_array = [accuracy_array;mean(accuracy)];
+
+end %obs_transition
 
 % plot accuracy pdf:
 figure

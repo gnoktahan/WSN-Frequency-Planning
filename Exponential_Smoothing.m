@@ -14,9 +14,10 @@ for scan = 1 : 500
   LLDN_SF = ones(1,10);
   for i = 0 : 9 % 10 time slots
     RSSI_LLDN = CISTER_RSSI(50*i+1 : 50*(i+1)); % measurement
-    %RSSI_LLDN = CISTER_RSSI(50*i+13 : 50*i+37); % measurement
+    %%RSSI_LLDN = CISTER_RSSI(50*i+13 : 50*i+37); % measurement
     if mean(RSSI_LLDN) < 14
       LLDN_SF(i+1) = 2; % 2 means free 1 means occupied (interfered)
+      %%LLDN_SF(i+1) = mean(RSSI_LLDN);
     end
   end
 
@@ -38,29 +39,48 @@ RSSI_LLDN_FULL = [];
 LLDN_SF = ones(1,10);
 LLDN_SF_FULL = ones(1,10);
 for i = 0 : 9 % 10 time slots
-  %RSSI_LLDN = CISTER_RSSI(50*i+13 : 50*i+37); % if ED optimization is not applied
-  RSSI_LLDN = CISTER_RSSI(50*i+20 : 50*i+((optimum_ED_width_matrix(k,scan)/0.02)-1+13)); % if ED optimization is applied
+  RSSI_LLDN = CISTER_RSSI(50*i+13 : 50*i+37); % if ED optimization is not applied
+  %%RSSI_LLDN = CISTER_RSSI(50*i+20 : 50*i+((optimum_ED_width_matrix(k,scan)/0.02)-1+13)); % if ED optimization is applied
   RSSI_LLDN_FULL = CISTER_RSSI(50*i+1 : 50*(i+1));
   if mean(RSSI_LLDN) < 14
     LLDN_SF(i+1) = 2; % 2 means free 1 means occupied (interfered)
+    %%LLDN_SF(i+1) = mean(RSSI_LLDN);
   end
   if mean(RSSI_LLDN_FULL) < 14
     LLDN_SF_FULL(i+1) = 2; % 2 means free 1 means occupied (interfered)
+    %%LLDN_SF_FULL(i+1) = mean(RSSI_LLDN_FULL);
   end
 end
 
 LLDN_FULL = [LLDN_FULL,LLDN_SF_FULL];
 
 %Exponential Smoothing algorithm:
+P_measured = LLDN_SF_FULL;
+%%P_measured = LLDN_SF;
 P_new = alpha*P_measured + (1-alpha)*P_previous;
 P_previous = round(P_new);
-P_measured = LLDN_SF;
-%P_measured = LLDN_SF;
-ES_estimation = [ES_estimation,round(P_new)];
+%%P_previous = P_new;
+%%ES_estimation = [ES_estimation,round(P_new)];
+ES_estimation = [ES_estimation,P_new];
 
 end
 
-
+%{
+for i = 1 : length(ES_estimation)
+  if ES_estimation(i) < 14
+    ES_estimation(i) = 2; % 2 means free 1 means occupied (interfered)
+  else
+    ES_estimation(i) = 1;
+  end
+end
+for i = 1 : length(LLDN_FULL)
+  if LLDN_FULL(i) < 14
+    LLDN_FULL(i) = 2; % 2 means free 1 means occupied (interfered)
+  else
+    LLDN_FULL(i) = 1;
+  end
+end
+%}
 
 count = 0;
 for i = 1 : length(ES_estimation)
