@@ -163,11 +163,11 @@ if isnan(s.x)
       error('Observation matrix must be square and invertible for state autointialization.');
    end
    s.x = inv(s.H)*s.z;
-   s.P = inv(s.H)*s.R*inv(s.H'); 
+   s.P = inv(s.H)*s.R*inv(s.H');
 else
-   
+
    % This is the code which implements the discrete Kalman filter:
-   
+
    % Prediction for state vector and covariance:
    s.x = s.A*s.x + s.B*s.u;
    s.P = s.A * s.P * s.A' + s.Q;
@@ -176,9 +176,13 @@ else
    K = s.P*s.H'*inv(s.H*s.P*s.H'+s.R);
 
    % Correction based on observation:
-   s.x = s.x + K*(s.z-s.H*s.x);
+   if mean(s.x) <= 1.1 && mean(s.x) > 1
+     s.x = (1/1.45)*(s.x + K*(s.z-s.H*s.x));
+   else
+     s.x = s.x + K*(s.z-s.H*s.x);
+   end
    s.P = s.P - K*s.H*s.P;
-   
+
    % Note that the desired result, which is an improved estimate
    % of the sytem state vector x and its covariance P, was obtained
    % in only five lines of code, once the system was defined. (That's
@@ -188,6 +192,3 @@ else
 end
 
 return
-
-
-  

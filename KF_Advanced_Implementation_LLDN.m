@@ -3,9 +3,15 @@
 directory='/Users/GKN/Downloads/15.4_RSSI/';
 file_name='node1.txt';
 fileID=fopen(strcat(directory,file_name),'r');
-A=fscanf(fileID,'%f %f',[2000000 1]);
+delimiter  = ' ';
+A=fscanf(fileID,'%f %f',[2000000 1],'Delimiter', delimiter);
 fclose(fileID);
 %}
+
+fid = fopen('/Users/GKN/Downloads/CU_RSSI/omni_16dbm.txt', 'r');
+A = textscan(fid, '%f %f %s %s %d %d %d %d %d %d %d');
+CU_RSSI=A{1,9};
+clear A;
 
 CISTER_RSSI_5600_500 = zeros(5600,500);
 for i = 1 : 500
@@ -140,6 +146,7 @@ accuracy_array = [];
 %for st_transition = 0.95 : 0.001 : 1.05
 for obs_transition = 1.061 : 0.0001 : 1.063
 
+KF_out_big = [];
 accuracy = zeros(500,1);
 throughput_util = zeros(500,1);
 max_throughput_util = zeros(500,1);
@@ -155,7 +162,7 @@ for scan = 1 : 500
   for i = 0 : 9 % 10 time slots
     RSSI_LLDN = CISTER_RSSI(50*i+1 : 50*(i+1)); % measurement
     %%RSSI_LLDN = CISTER_RSSI(50*i+13 : 50*i+37); % measurement
-    if mean(RSSI_LLDN) < 14
+    if mean(RSSI_LLDN) < 13
       LLDN_SF(i+1) = 2; % 2 means free 1 means occupied (interfered)
       %%LLDN_SF(i+1) = mean(RSSI_LLDN);
     end
@@ -170,12 +177,14 @@ for scan = 1 : 500
   %%P_previous = LLDN_SF;
 
   %s.x = [1,1,1,1,2,2,2,2,2,1]; %Initialization (first measurement results)
-  s.x = LLDN_SF; %Initialization (first measurement results)
-  s.A = st_transition;
-  s.Q = 0.03^2; % variance, hence stdev^2
+  %s.x = LLDN_SF; %Initialization (first measurement results)
+  s.A = 1;
+  %s.Q = 0.03^2; % variance, hence stdev^2
+  s.Q = 0.000000000000000000000000000001;
   %%s.H = obs_transition;
-  s.H = 1.0615;
-  s.R = 0.06^2; % variance, hence stdev^2
+  s.H = 1;
+  %s.R = 0.06^2; % variance, hence stdev^2
+  s.R = 0.000000000000000000000000000001;
   s.B = 0;
   s.u = 0;
   s.x = nan;
@@ -195,11 +204,11 @@ for k = 1 : 11 % Until 5500
     RSSI_LLDN = CISTER_RSSI(50*i+13 : 50*i+37); % if ED optimization is not applied
     %%RSSI_LLDN = CISTER_RSSI(50*i+20 : 50*i+((optimum_ED_width_matrix(k,scan)/0.02)-1+13)); % if ED optimization is applied
     RSSI_LLDN_FULL = CISTER_RSSI(50*i+1 : 50*(i+1));
-    if mean(RSSI_LLDN) < 14
+    if mean(RSSI_LLDN) < 13
       LLDN_SF(i+1) = 2; % 2 means free 1 means occupied (interfered)
       %%LLDN_SF(i+1) = mean(RSSI_LLDN);
     end
-    if mean(RSSI_LLDN_FULL) < 14
+    if mean(RSSI_LLDN_FULL) < 13
       LLDN_SF_FULL(i+1) = 2; % 2 means free 1 means occupied (interfered)
       %%LLDN_SF_FULL(i+1) = mean(RSSI_LLDN_FULL);
     end
@@ -227,19 +236,20 @@ for k = 1 : 11 % Until 5500
 end
 
 KF_out = round([s(2:end).x]);
+KF_out_big = [KF_out_big;KF_out];
 %%KF_out = [s(2:end).x];
 %%KF_out = ES_estimation;
 
 %{
 for i = 1 : length(KF_out)
-  if KF_out(i) < 14
+  if KF_out(i) < 13
     KF_out(i) = 2; % 2 means free 1 means occupied (interfered)
   else
     KF_out(i) = 1;
   end
 end
 for i = 1 : length(LLDN_FULL)
-  if LLDN_FULL(i) < 14
+  if LLDN_FULL(i) < 13
     LLDN_FULL(i) = 2; % 2 means free 1 means occupied (interfered)
   else
     LLDN_FULL(i) = 1;
@@ -271,29 +281,67 @@ hold off
 %accuracy(scan,1) = 100 - perc_err;
 
 count = 0;
-for i = 1 : length(KF_out)
-  if KF_out(i) == LLDN_FULL(i)
+for i = 1 : (length(KF_out)-10)
+  if KF_out(i) == LLDN_FULL(i+10)
     count = count + 1;
   end
 end
-accuracy(scan,1) = 100*(count/length(KF_out));
+accuracy(scan,1) = 100*(count/(length(KF_out)-10));
 
 count = 0;
-for i = 1 : length(KF_out)
-  if KF_out(i) == LLDN_FULL(i) && KF_out(i) == 2
+for i = 1 : (length(KF_out)-10)
+  if (KF_out(i) == LLDN_FULL(i+10)) && (KF_out(i) == 2)
     count = count + 1;
   end
 end
-throughput_util(scan,1) = 100*(count/length(KF_out));
+throughput_util(scan,1) = 100*(count/(length(KF_out)-10));
 
 count = 0;
-for i = 1 : length(LLDN_FULL)
-  if LLDN_FULL(i) == 2
+for i = 1 : (length(KF_out)-10)
+  if (KF_out(i) == 2) && (LLDN_FULL(i+10) == 1)
     count = count + 1;
   end
 end
-max_throughput_util(scan,1) = 100*(count/length(LLDN_FULL));
+false_positive(scan,1) = 100*(count/(length(KF_out)-10));
 
+count = 0;
+for i = 1 : (length(KF_out)-10)
+  if LLDN_FULL(i+10) == 2
+    count = count + 1;
+  end
+end
+max_throughput_util(scan,1) = 100*(count/(length(KF_out)-10));
+
+% Combine KF and ES to reduce false positives
+KF_ES = ones(1,length(KF_out));
+count = 0;
+for i = 1 : (length(KF_out)-10)
+  if (KF_out_big(scan,i) == 2) && (ES_estimation_big(scan,i) == 2)
+    KF_ES(i) = 2;
+  end
+  if (KF_ES(i) == 2) && (LLDN_FULL(i+10) == 1)
+    count = count + 1;
+  end
+end
+KF_ES_false_positive(scan,1) = 100*(count/(length(KF_out)-10));
+
+count = 0;
+for i = 1 : (length(KF_out)-10)
+  if KF_ES(i) == LLDN_FULL(i+10)
+    count = count + 1;
+  end
+end
+KF_ES_accuracy(scan,1) = 100*(count/(length(KF_out)-10));
+
+count = 0;
+for i = 1 : (length(KF_out)-10)
+  if (KF_ES(i) == LLDN_FULL(i+10)) && (KF_ES(i) == 2)
+    count = count + 1;
+  end
+end
+KF_ES_throughput_util(scan,1) = 100*(count/(length(KF_out)-10));
+
+%{
 for j = 1 : 11
   count = 0;
   for i = ((j-1)*1+1) : (10*j)
@@ -303,8 +351,17 @@ for j = 1 : 11
   end
   throughput_gain_vs_ED_width = [throughput_gain_vs_ED_width;((100*(count/length(KF_out)))*(1-optimum_ED_width_matrix(j,scan)))];
 end
+%}
 
 end %scan
+
+mean_accuracy = mean(accuracy);
+mean_KF_ES_accuracy = mean(KF_ES_accuracy);
+mean_false_positive = mean(false_positive);
+mean_KF_ES_false_positive = mean(KF_ES_false_positive);
+mean_throughput_util = mean(throughput_util);
+mean_KF_ES_throughput_util = mean(KF_ES_throughput_util);
+mean_max_throughput_util = mean(max_throughput_util);
 
 accuracy_array = [accuracy_array;mean(accuracy)];
 
